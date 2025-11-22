@@ -353,10 +353,36 @@ lib.onCache('vehicle', function(vehicle)
     end
 end)
 
-AddEventHandler('onResourceStop', function (resource)
+AddEventHandler('onResourceStop', function(resource)
     if resource ~= GetCurrentResourceName() then return end
+
+    -- Hide any open text UI
     local isOpen, text = lib.isTextUIOpen()
-    if isOpen and text == locale('info.delete_spike') then
+    if isOpen and (text == locale('info.delete_spike') or text == locale('info.delete_prop')) then
         lib.hideTextUI()
+    end
+
+    -- Clean up all spawned police props
+    if GlobalState.policeObjects then
+        for i = #GlobalState.policeObjects, 1, -1 do
+            local netid = GlobalState.policeObjects[i]
+            local entity = NetworkGetEntityFromNetworkId(netid)
+            if entity and DoesEntityExist(entity) then
+                DeleteEntity(entity)
+            end
+            table.remove(GlobalState.policeObjects, i)
+        end
+    end
+
+    -- Clean up all spawned spike strips (if needed)
+    if GlobalState.spikeStrips then
+        for i = #GlobalState.spikeStrips, 1, -1 do
+            local netid = GlobalState.spikeStrips[i]
+            local entity = NetworkGetEntityFromNetworkId(netid)
+            if entity and DoesEntityExist(entity) then
+                DeleteEntity(entity)
+            end
+            table.remove(GlobalState.spikeStrips, i)
+        end
     end
 end)
