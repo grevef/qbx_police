@@ -1,5 +1,21 @@
 local sharedConfig = require 'config.shared'
 
+Config = {}
+
+Config.ModelList = {
+    [`prop_roadcone02a`] = "Kjegle",
+    [`prop_barrier_work06a`] = "Barriere",
+    [`prop_snow_sign_road_06g`] = "Fartsgrenseskilt",
+    [`prop_gazebo_03`] = "Telt",
+    [`prop_worklight_03b`] = "Lyskaster",
+    [`prop_chair_08`] = "Stol",
+    [`prop_chair_pile_01`] = "Stolstabel",
+    [`prop_table_03`] = "Bord",
+    [`des_tvsmash_root`] = "TV",
+    [`p_ld_stinger_s`] = "Piggbane"
+
+}
+
 local function checkIsSpikeObject(spikeStrips, fixedCoords, position, maxDistance)
     if #spikeStrips == 0 then return end
     for i = 1, #spikeStrips do
@@ -76,30 +92,54 @@ RegisterNetEvent('police:client:spawnPObj', function(item)
     end
 end)
 
-RegisterNetEvent('police:client:deleteObject', function()
-    local objectId = getClosestObject(GlobalState.policeObjects, GetEntityCoords(cache.ped) , 5.0)
-    if not objectId then return end
-    if lib.progressBar({
-        duration = 2500,
-        label = locale('progressbar.remove_object'),
-        useWhileDead = false,
-        canCancel = true,
-        disable = {
-            car = true,
-            move = true,
-            combat = true,
-            mouse = false
-        },
-        anim = {
-            dict = 'weapons@first_person@aim_rng@generic@projectile@thermal_charge@',
-            clip = 'plant_floor'
-        }
-    }) then
-        TriggerServerEvent('police:server:despawnObject', objectId)
-    else
-        exports.qbx_core:Notify(locale('error.canceled'), 'error')
+CreateThread(function()
+    for model, _ in pairs(Config.ModelList) do
+        exports.targeting:addModel(model, {
+            {
+                name = 'delete_police_object',
+                label = 'Fjern Politiobjekt',
+                icon = 'fa-solid fa-trash',
+                distance = 2.0,
+
+                onSelect = function(data)
+                    local entity = data.entity
+                    if not entity or not DoesEntityExist(entity) then return end
+
+                    local objectId = NetworkGetNetworkIdFromEntity(entity)
+                    if not objectId then return end
+
+                    -- Use entity model to get label
+                    local modelHash = GetEntityModel(entity)
+                    local modelLabel = Config.ModelList and Config.ModelList[modelHash] or "Object"
+
+                    local success = lib.progressBar({
+                        duration = 2500,
+                        label = string.format(locale('progressbar.remove_object'), modelLabel),
+                        useWhileDead = false,
+                        canCancel = true,
+                        disable = {
+                            car = true,
+                            move = true,
+                            combat = true,
+                            mouse = false
+                        },
+                        anim = {
+                            dict = 'weapons@first_person@aim_rng@generic@projectile@thermal_charge@',
+                            clip = 'plant_floor'
+                        }
+                    })
+
+                    if success then
+                        TriggerServerEvent('police:server:despawnObject', objectId)
+                    else
+                        exports.core:Notify(locale('error.canceled'), 'error')
+                    end
+                end
+            }
+        })
     end
 end)
+
 
 ---Spawn a spike strip.
 RegisterNetEvent('police:client:SpawnSpikeStrip', function()
