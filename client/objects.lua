@@ -94,7 +94,7 @@ end)
 
 CreateThread(function()
     for model, _ in pairs(Config.ModelList) do
-        exports.targeting:addModel(model, {
+        exports.ox_target:addModel(model, {
             {
                 name = 'delete_police_object',
                 label = 'Fjern Politiobjekt',
