@@ -91,3 +91,4 @@ AddEventHandler('onResourceStop', function (resourceName)
     GlobalState.policeObjects = nil
     GlobalState.fixedCoords = nil
 end)
+
